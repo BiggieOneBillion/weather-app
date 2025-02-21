@@ -11,10 +11,8 @@ import {
   Tooltip, 
   Legend 
 } from 'chart.js';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Download } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+
 
 // Register ChartJS components
 ChartJS.register(
