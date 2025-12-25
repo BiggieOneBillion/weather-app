@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -16,11 +16,16 @@ import { WeatherDisplay } from "./weather-display";
 import { ForecastDisplay } from "./forecast-display";
 import { WeatherRecommendations } from "./weather-recommendations";
 import { WeatherHistoryAnalysis } from "./weather-history-analysis";
+import { FavoriteLocations } from "./favorite-locations";
+import { HourlyForecastChart } from "./hourly-forecast-chart";
+import { WeatherAlerts } from "./weather-alerts";
+import { useFavorites, type FavoriteLocation } from "@/lib/favorites-context";
 import type { SearchResponse, WeatherResponse } from "@/types/weather";
 
 export default function WeatherDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { addFavorite, isFavorite } = useFavorites();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [locations, setLocations] = useState<SearchResponse[]>([]);
@@ -82,8 +87,38 @@ export default function WeatherDashboard() {
     }
   }, [searchParams]);
 
+  const handleFavoriteClick = () => {
+    if (weather) {
+      addFavorite({
+        name: weather.location.name,
+        region: weather.location.region,
+        country: weather.location.country,
+        lat: Number(weather.location.lat),
+        lon: Number(weather.location.lon),
+      });
+    }
+  };
+
+  const handleSelectFavorite = async (location: FavoriteLocation) => {
+    try {
+      setIsLoading(true);
+      const weatherData = await getWeatherData(`${location.lat},${location.lon}`);
+      if (weatherData) {
+        setWeather(weatherData);
+        router.push(
+          `/?q=${encodeURIComponent(location.name)}&lat=${location.lat}&lon=${location.lon}`
+        );
+      }
+    } catch (error) {
+      console.error('Failed to fetch weather:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <FavoriteLocations onSelectLocation={handleSelectFavorite} />
       <div className="flex justify-center">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -136,10 +171,24 @@ export default function WeatherDashboard() {
       </div>
 
       {weather && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="p-6">
-            <WeatherDisplay weather={weather} />
-          </Card>
+        <div className="space-y-6">
+          {weather.alerts?.alert && weather.alerts.alert.length > 0 && (
+            <WeatherAlerts alerts={weather.alerts.alert} />
+          )}
+          <div className="flex justify-end">
+            <Button
+              onClick={handleFavoriteClick}
+              variant={isFavorite(Number(weather.location.lat), Number(weather.location.lon)) ? "default" : "outline"}
+              className="gap-2"
+            >
+              <Star className={isFavorite(Number(weather.location.lat), Number(weather.location.lon)) ? "fill-current" : ""} />
+              {isFavorite(Number(weather.location.lat), Number(weather.location.lon)) ? "Saved" : "Save Location"}
+            </Button>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="p-6">
+              <WeatherDisplay weather={weather} />
+            </Card>
           <Card className="p-6">
             <WeatherRecommendations
               temperature={weather.current.temp_c}
@@ -149,6 +198,9 @@ export default function WeatherDashboard() {
           <Card className="md:col-span-2 p-6">
             <ForecastDisplay forecast={weather.forecast} />
           </Card>
+          <Card className="md:col-span-2">
+            <HourlyForecastChart hourlyData={weather.forecast.forecastday[0].hour} />
+          </Card>
           <Card className="md:col-span-2  md:p-6 ">
             <WeatherHistoryAnalysis 
               lat={Number(weather.location.lat)}
@@ -156,6 +208,7 @@ export default function WeatherDashboard() {
               locationName={weather.location.name}
             />
           </Card>
+          </div>
         </div>
       )}
     </div>

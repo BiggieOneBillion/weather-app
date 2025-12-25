@@ -38,8 +38,14 @@ ChartJS.register(
 );
 
 interface HistoricalData {
+  date: string;
   year: number;
   avgTemp: number;
+  maxTemp: number;
+  minTemp: number;
+  condition: string;
+  precipitation: number;
+  humidity: number;
 }
 
 export function WeatherHistoryAnalysis({ lat, lon, locationName }: { 
@@ -75,13 +81,30 @@ export function WeatherHistoryAnalysis({ lat, lon, locationName }: {
   }, [lat, lon]);
 
   const chartCommonData = {
-    labels: historicalData.map(d => d.year.toString()),
+    labels: historicalData.map(d => {
+      const date = new Date(d.date);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }),
     datasets: [
       {
         label: 'Average Temperature (°C)',
         data: historicalData.map(d => d.avgTemp),
         borderColor: 'rgb(75, 192, 192)',
         backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        tension: 0.1,
+      },
+      {
+        label: 'Max Temperature (°C)',
+        data: historicalData.map(d => d.maxTemp),
+        borderColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        tension: 0.1,
+      },
+      {
+        label: 'Min Temperature (°C)',
+        data: historicalData.map(d => d.minTemp),
+        borderColor: 'rgb(54, 162, 235)',
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
         tension: 0.1,
       },
     ],
@@ -93,7 +116,7 @@ export function WeatherHistoryAnalysis({ lat, lon, locationName }: {
     plugins: {
       title: {
         display: true,
-        text: 'Temperature Trend Over Years'
+        text: '7-Day Temperature History'
       },
       legend: {
         position: 'top' as const,
@@ -142,17 +165,29 @@ export function WeatherHistoryAnalysis({ lat, lon, locationName }: {
 function calculateTrend(data: HistoricalData[]): string {
   if (data.length < 2) return 'Insufficient data for trend analysis';
 
-  const firstYear = data[0].avgTemp;
-  const lastYear = data[data.length - 1].avgTemp;
-  const difference = lastYear - firstYear;
-  const yearsSpan = data[data.length - 1].year - data[0].year;
-  const changePerYear = difference / yearsSpan;
+  const firstDay = data[0].avgTemp;
+  const lastDay = data[data.length - 1].avgTemp;
+  const difference = lastDay - firstDay;
+  const avgTemp = data.reduce((sum, d) => sum + d.avgTemp, 0) / data.length;
+  const avgPrecip = data.reduce((sum, d) => sum + d.precipitation, 0) / data.length;
 
-  if (Math.abs(changePerYear) < 0.1) {
-    return 'Temperature has remained relatively stable over this period.';
-  } else if (changePerYear > 0) {
-    return `Temperature shows a warming trend of approximately ${changePerYear.toFixed(2)}°C per year.`;
+  let analysis = `Over the past 7 days, the average temperature was ${avgTemp.toFixed(1)}°C. `;
+  
+  if (Math.abs(difference) < 1) {
+    analysis += 'Temperatures have remained relatively stable. ';
+  } else if (difference > 0) {
+    analysis += `Temperatures have increased by ${difference.toFixed(1)}°C from the start of the week. `;
   } else {
-    return `Temperature shows a cooling trend of approximately ${Math.abs(changePerYear).toFixed(2)}°C per year.`;
+    analysis += `Temperatures have decreased by ${Math.abs(difference).toFixed(1)}°C from the start of the week. `;
   }
+
+  if (avgPrecip > 5) {
+    analysis += `There was significant precipitation averaging ${avgPrecip.toFixed(1)}mm per day.`;
+  } else if (avgPrecip > 0) {
+    analysis += `Light precipitation was recorded, averaging ${avgPrecip.toFixed(1)}mm per day.`;
+  } else {
+    analysis += 'No precipitation was recorded during this period.';
+  }
+
+  return analysis;
 }

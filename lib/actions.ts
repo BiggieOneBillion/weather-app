@@ -46,7 +46,7 @@ export async function searchLocations(query: string): Promise<SearchResponse[]> 
 export async function getWeatherData(query: string, days = 7): Promise<WeatherResponse | null> {
   try {
     const res = await fetch(
-      `https://api.weatherapi.com/v1/forecast.json?key=${process.env.WEATHERAPI_KEY}&q=${encodeURIComponent(query)}&days=${days}&aqi=yes`,
+      `https://api.weatherapi.com/v1/forecast.json?key=${process.env.WEATHERAPI_KEY}&q=${encodeURIComponent(query)}&days=${days}&aqi=yes&alerts=yes`,
       { next: { revalidate: 1800 } }, // Cache for 30 minutes
     )
 
