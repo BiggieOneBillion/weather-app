@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ThemeProvider } from '@/components/theme-provider'
+import { FavoritesProvider } from '@/lib/favorites-context'
+import { ComparisonProvider } from '@/lib/comparison-context'
 
 export const metadata: Metadata = {
-  title: 'weather app',
-  description: 'Weather application built using nextjs ',
-  generator: 'Next Js',
+  title: 'Weather Forecast',
+  description: 'Get accurate weather forecasts for any location',
 }
 
 export default function RootLayout({
@@ -13,8 +15,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <FavoritesProvider>
+            <ComparisonProvider>
+              {children}
+            </ComparisonProvider>
+          </FavoritesProvider>
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

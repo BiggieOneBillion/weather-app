@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Star, Plus, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -10,17 +10,27 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDebounce } from "@/lib/hooks";
 import { searchLocations, getWeatherData } from "@/lib/actions";
 import { WeatherDisplay } from "./weather-display";
 import { ForecastDisplay } from "./forecast-display";
 import { WeatherRecommendations } from "./weather-recommendations";
 import { WeatherHistoryAnalysis } from "./weather-history-analysis";
+import { FavoriteLocations } from "./favorite-locations";
+import { HourlyForecastChart } from "./hourly-forecast-chart";
+import { WeatherAlerts } from "./weather-alerts";
+import { LocationComparison } from "./location-comparison";
+import { WeatherMap } from "./weather-map";
+import { useFavorites, type FavoriteLocation } from "@/lib/favorites-context";
+import { useComparison } from "@/lib/comparison-context";
 import type { SearchResponse, WeatherResponse } from "@/types/weather";
 
 export default function WeatherDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { addFavorite, isFavorite } = useFavorites();
+  const { addLocation: addToComparison, canAddMore } = useComparison();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [locations, setLocations] = useState<SearchResponse[]>([]);
@@ -82,8 +92,45 @@ export default function WeatherDashboard() {
     }
   }, [searchParams]);
 
+  const handleFavoriteClick = () => {
+    if (weather) {
+      addFavorite({
+        name: weather.location.name,
+        region: weather.location.region,
+        country: weather.location.country,
+        lat: Number(weather.location.lat),
+        lon: Number(weather.location.lon),
+      });
+    }
+  };
+
+  const handleSelectFavorite = async (location: FavoriteLocation) => {
+    try {
+      setIsLoading(true);
+      const weatherData = await getWeatherData(`${location.lat},${location.lon}`);
+      if (weatherData) {
+        setWeather(weatherData);
+        router.push(
+          `/?q=${encodeURIComponent(location.name)}&lat=${location.lat}&lon=${location.lon}`
+        );
+      }
+    } catch (error) {
+      console.error('Failed to fetch weather:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddToComparison = () => {
+    if (weather && canAddMore) {
+      addToComparison(weather);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <FavoriteLocations onSelectLocation={handleSelectFavorite} />
+      
       <div className="flex justify-center">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -135,29 +182,78 @@ export default function WeatherDashboard() {
         </Popover>
       </div>
 
-      {weather && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="p-6">
-            <WeatherDisplay weather={weather} />
-          </Card>
-          <Card className="p-6">
-            <WeatherRecommendations
-              temperature={weather.current.temp_c}
-              condition={weather.current.condition.text}
-            />
-          </Card>
-          <Card className="md:col-span-2 p-6">
-            <ForecastDisplay forecast={weather.forecast} />
-          </Card>
-          <Card className="md:col-span-2  md:p-6 ">
-            <WeatherHistoryAnalysis 
-              lat={Number(weather.location.lat)}
-              lon={Number(weather.location.lon)}
-              locationName={weather.location.name}
-            />
-          </Card>
-        </div>
-      )}
+      <Tabs defaultValue="weather" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="weather">Weather</TabsTrigger>
+          <TabsTrigger value="comparison">Comparison</TabsTrigger>
+          <TabsTrigger value="map">Map</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="weather" className="space-y-6">
+          {weather && (
+            <div className="space-y-6">
+              {weather.alerts?.alert && weather.alerts.alert.length > 0 && (
+                <WeatherAlerts alerts={weather.alerts.alert} />
+              )}
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={handleAddToComparison}
+                  variant="outline"
+                  className="gap-2"
+                  disabled={!canAddMore}
+                >
+                  <Plus className="w-4 h-4" />
+                  {canAddMore ? "Add to Compare" : "Max 3 Locations"}
+                </Button>
+                <Button
+                  onClick={handleFavoriteClick}
+                  variant={isFavorite(Number(weather.location.lat), Number(weather.location.lon)) ? "default" : "outline"}
+                  className="gap-2"
+                >
+                  <Star className={isFavorite(Number(weather.location.lat), Number(weather.location.lon)) ? "fill-current" : ""} />
+                  {isFavorite(Number(weather.location.lat), Number(weather.location.lon)) ? "Saved" : "Save Location"}
+                </Button>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card className="p-6">
+                  <WeatherDisplay weather={weather} />
+                </Card>
+                <Card className="p-6">
+                  <WeatherRecommendations
+                    temperature={weather.current.temp_c}
+                    condition={weather.current.condition.text}
+                  />
+                </Card>
+                <Card className="md:col-span-2 p-6">
+                  <ForecastDisplay forecast={weather.forecast} />
+                </Card>
+                <Card className="md:col-span-2">
+                  <HourlyForecastChart hourlyData={weather.forecast.forecastday[0].hour} />
+                </Card>
+                <Card className="md:col-span-2  md:p-6 ">
+                  <WeatherHistoryAnalysis 
+                    lat={Number(weather.location.lat)}
+                    lon={Number(weather.location.lon)}
+                    locationName={weather.location.name}
+                  />
+                </Card>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="comparison">
+          <LocationComparison />
+        </TabsContent>
+        
+        <TabsContent value="map">
+          <WeatherMap 
+            lat={weather?.location.lat ? Number(weather.location.lat) : undefined}
+            lon={weather?.location.lon ? Number(weather.location.lon) : undefined}
+            locationName={weather?.location.name}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
