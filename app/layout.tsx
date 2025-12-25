@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { FavoritesProvider } from '@/lib/favorites-context'
+import { ComparisonProvider } from '@/lib/comparison-context'
 
 export const metadata: Metadata = {
   title: 'Weather Forecast',
@@ -18,7 +19,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <FavoritesProvider>
-            {children}
+            <ComparisonProvider>
+              {children}
+            </ComparisonProvider>
           </FavoritesProvider>
         </ThemeProvider>
       </body>
