@@ -14,18 +14,7 @@ import {
 import { Card } from '@/components/ui/card';
 
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-// Register additional ChartJS components
+// Register ChartJS components once
 ChartJS.register(
   CategoryScale,
   LinearScale,
