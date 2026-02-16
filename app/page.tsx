@@ -1,3 +1,4 @@
+"use client"
 import { Suspense } from "react"
 import WeatherDashboard from "@/components/weather-dashboard"
 import { Skeleton } from "@/components/ui/skeleton"

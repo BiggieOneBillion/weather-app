@@ -186,7 +186,7 @@ export default function WeatherDashboard() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="weather">Weather</TabsTrigger>
           <TabsTrigger value="comparison">Comparison</TabsTrigger>
-          <TabsTrigger value="map">Map</TabsTrigger>
+          {/* <TabsTrigger value="map">Map</TabsTrigger> */}
         </TabsList>
         
         <TabsContent value="weather" className="space-y-6">
@@ -246,13 +246,13 @@ export default function WeatherDashboard() {
           <LocationComparison />
         </TabsContent>
         
-        <TabsContent value="map">
+        {/* <TabsContent value="map">
           <WeatherMap 
             lat={weather?.location.lat ? Number(weather.location.lat) : undefined}
             lon={weather?.location.lon ? Number(weather.location.lon) : undefined}
             locationName={weather?.location.name}
           />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );
