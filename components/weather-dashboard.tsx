@@ -183,7 +183,7 @@ export default function WeatherDashboard() {
       </div>
 
       <Tabs defaultValue="weather" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="weather">Weather</TabsTrigger>
           <TabsTrigger value="comparison">Comparison</TabsTrigger>
           {/* <TabsTrigger value="map">Map</TabsTrigger> */}
